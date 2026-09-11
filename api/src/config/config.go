@@ -13,7 +13,11 @@ import (
 var (
 	StringConexaoBanco = ""
 
+//PORTA ONDE A API VAI RODAR
 	Porta = 0
+
+//SECRET_KEY PARA ASSINAR O TOKEN
+	SecretKey []byte
 )
 
 //inicia as variaveis de ambiente
@@ -35,5 +39,7 @@ func Carregar() {
 		os.Getenv("DB_SENHA"),
 		os.Getenv("DB_NOME"),
 	)
+
+	SecretKey = []byte(os.Getenv("SECRET_KEY"))
 
 }
