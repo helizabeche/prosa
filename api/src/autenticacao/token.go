@@ -2,8 +2,10 @@ package autenticacao
 
 import (
 	"api/src/config"
+	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,8 +30,13 @@ func ValidarToken(r *http.Request) error {
 	if erro != nil {
 		return erro
 	}
-	fmt.Println(token)
-	return nil
+	if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return nil
+	}
+	return fmt.Errorf("Token inválido")
+
+	//fmt.Println(token)
+	//return nil
 }
 
 func extrairToken(r *http.Request) string {
@@ -40,6 +47,26 @@ func extrairToken(r *http.Request) string {
 	}
 
 	return ""
+}
+
+// retorna o usuarioId que está salvo no token
+func ExtrairUsuarioID(r *http.Request) (uint64, error) {
+	tokenString := extrairToken(r)
+	token, erro := jwt.Parse(tokenString, retornarChaveDeVerificacao)
+	if erro != nil {
+		return 0, erro
+	}
+
+	if permissoes, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		usuarioID, erro := strconv.ParseUint(fmt.Sprintf("%.0f", permissoes["usuarioID"]), 10, 64)
+		if erro != nil {
+			return 0, erro
+		}
+
+		return usuarioID, nil
+	}
+
+	return 0, errors.New("Token inválido")
 }
 
 func retornarChaveDeVerificacao(token *jwt.Token) (interface{}, error) {

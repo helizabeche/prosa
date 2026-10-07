@@ -158,3 +158,137 @@ func (repositorio Usuarios) BuscarPorEmail(email string) (modelos.Usuario, error
 
 	return usuario, nil
 }
+
+//permite que um usuário siga outro usuário
+func (repositorio Usuarios) Seguir(usuarioID, seguidorID uint64) error {
+	statement, erro := repositorio.db.Prepare(
+		"insert ignore into seguidores (usuario_id, seguidor_id) values(?, ?)",
+	)
+
+	if erro != nil {
+		return erro
+	}
+	defer statement.Close()
+
+	if _, erro = statement.Exec(usuarioID, seguidorID); erro != nil {
+		return erro
+	}
+	return nil
+}
+
+// permite que um usuário pare de seguir outro usuário
+func (repositorio Usuarios) PararDeSeguir(usuarioID, seguidorID uint64) error {
+	statement, erro := repositorio.db.Prepare(
+		"delete from seguidores where usuario_id = ? and seguidor_id = ?",
+	)
+
+	if erro != nil {
+		return erro
+	}
+	defer statement.Close()
+
+	if _, erro = statement.Exec(usuarioID, seguidorID); erro != nil {
+		return erro
+	}
+
+	return nil
+}
+
+//metodo que busca os seguidores de um usuário
+func (repositorio Usuarios) BuscarSeguidores(usuarioID uint64) ([]modelos.Usuario, error) {
+	linhas, erro := repositorio.db.Query(
+		"select u.id, u.nome, u.nick, u.email, u.criadoEm from usuarios u inner join seguidores s on u.id = s.seguidor_id where s.usuario_id = ?",
+		usuarioID,
+	)
+	if erro != nil {
+		return []modelos.Usuario{}, erro
+	}
+	defer linhas.Close()
+
+	var usuarios []modelos.Usuario
+
+	for linhas.Next() {
+		var usuario modelos.Usuario
+		if erro = linhas.Scan(
+			&usuario.ID,
+			&usuario.Nome,
+			&usuario.Nick,
+			&usuario.Email,
+			&usuario.CriadoEm,
+		); erro != nil {
+			return nil, erro
+		}
+		usuarios = append(usuarios, usuario)
+	}
+
+	return usuarios, nil
+}
+
+//metodo que busca os usuários que um usuário está seguindo
+func (repositorio Usuarios) BuscarSeguindo(usuarioID uint64) ([]modelos.Usuario, error){
+	linhas, erro := repositorio.db.Query(
+		"select u.id, u.nome, u.nick, u.email, u.criadoEm from usuarios u inner join seguidores s on u.id = s.usuario_id where s.seguidor_id = ?",
+		usuarioID,
+
+	)
+	if erro != nil {
+		return nil, erro
+	}
+	defer linhas.Close()
+
+	var usuarios []modelos.Usuario
+
+	for linhas.Next() {
+		var usuario modelos.Usuario
+		if erro = linhas.Scan(
+			&usuario.ID,
+			&usuario.Nome,
+			&usuario.Nick,
+			&usuario.Email,
+			&usuario.CriadoEm,
+		); erro != nil {
+			return nil, erro
+		}
+		usuarios = append(usuarios, usuario)
+	}
+
+	return usuarios, nil
+}
+
+//metodo tras senha e usuario do banco de dados pelo seu ID
+func (repositorio Usuarios) BuscarSenha(usuarioID uint64) (string, error) {
+	linhas, erro := repositorio.db.Query(
+		"select senha from usuarios where id = ?", usuarioID,
+	)
+	if erro != nil {
+		return "", erro
+	}
+	defer linhas.Close()
+
+	var usuario modelos.Usuario
+
+	if linhas.Next() {
+		if erro = linhas.Scan(&usuario.Senha); erro != nil {
+			return "", erro
+		}
+	}
+
+	return usuario.Senha, nil
+}
+
+//metodo atualiza a senha de um usuário no banco de dados
+func (repositorio Usuarios) AtualizarSenha(usuarioID uint64, novaSenha string) error {
+	statement, erro := repositorio.db.Prepare(
+		"update usuarios set senha = ? where id = ?",
+	)
+	if erro != nil {
+		return erro
+	}
+	defer statement.Close()
+
+	if _, erro = statement.Exec(novaSenha, usuarioID); erro != nil {
+		return erro
+	}
+
+	return nil
+}

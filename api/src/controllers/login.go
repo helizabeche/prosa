@@ -12,7 +12,54 @@ import (
 	"net/http"
 )
 
-/*
+
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	corpoRequisicao, erro := ioutil.ReadAll(r.Body)
+	if erro != nil {
+		respostas.Erro(w, http.StatusUnprocessableEntity, erro)
+		return
+	}
+
+	var usuario modelos.Usuario
+	if erro = json.Unmarshal(corpoRequisicao, &usuario); erro != nil {
+		respostas.Erro(w, http.StatusBadRequest, erro)
+		return
+	}
+
+	db, erro := banco.Conectar()
+	if erro != nil {
+		respostas.Erro(w, http.StatusInternalServerError, erro)
+		return
+	}
+	defer db.Close()
+
+	repositorio := repositorios.NovoRepositorioDeUsuarios(db)
+	usuarioSalvoNoBanco, erro := repositorio.BuscarPorEmail(usuario.Email)
+	if erro != nil {
+		respostas.Erro(w, http.StatusInternalServerError, erro)
+		return
+	}
+
+	//deu um erro bem aqui mas foi atualizado
+	if erro = seguranca.VerificarSenha(usuario.Senha, []byte(usuarioSalvoNoBanco.Senha)); erro != nil {
+		respostas.Erro(w, http.StatusUnauthorized, erro)
+		return
+	}
+
+	w.Write([]byte("Login realizado com sucesso!"))
+
+	token, erro := autenticacao.CriarToken(usuarioSalvoNoBanco.ID)
+	if erro != nil {
+		respostas.Erro(w, http.StatusInternalServerError, erro)
+		return
+	}
+	w.Write([]byte(token))
+
+
+	/*
+
+//tentativa de login anterior
 // Login realiza a autenticação de um usuário na API
 func Login(w http.ResponseWriter, r *http.Request) {
 
@@ -43,50 +90,8 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	}
 */
-
-func Login(w http.ResponseWriter, r *http.Request) {
-	corpoRequisicao, erro := ioutil.ReadAll(r.Body)
-	if erro != nil {
-		respostas.Erro(w, http.StatusUnprocessableEntity, erro)
-		return
-	}
-
-	var usuario modelos.Usuario
-	if erro = json.Unmarshal(corpoRequisicao, &usuario); erro != nil {
-		respostas.Erro(w, http.StatusBadRequest, erro)
-		return
-	}
-
-	db, erro := banco.Conectar()
-	if erro != nil {
-		respostas.Erro(w, http.StatusInternalServerError, erro)
-		return
-	}
-	defer db.Close()
-
-	repositorio := repositorios.NovoRepositorioDeUsuarios(db)
-	usuarioSalvoNoBanco, erro := repositorio.BuscarPorEmail(usuario.Email)
-	if erro != nil {
-		respostas.Erro(w, http.StatusInternalServerError, erro)
-		return
-	}
-
-	//deu um erro bem aqui
-	if erro = seguranca.VerificarSenha(usuarioSalvoNoBanco.Senha, []byte(usuario.Senha)); erro != nil {
-		respostas.Erro(w, http.StatusUnauthorized, erro)
-		return
-	}
-
-	w.Write([]byte("Login realizado com sucesso!"))
-
-	token, erro := autenticacao.CriarToken(usuarioSalvoNoBanco.ID)
-	if erro != nil {
-		respostas.Erro(w, http.StatusInternalServerError, erro)
-		return
-	}
-	w.Write([]byte(token))
-
 	/*
+		//anteriormente estava assim, mas deu erro de codigo divergente 	
 		repositorio := repositorios.NovoRepositorioDeUsuarios(db)
 		usuarioSalvoNoBanco, erro := repositorio.BuscarPorEmail(usuario.Email)
 		if erro != nil {
